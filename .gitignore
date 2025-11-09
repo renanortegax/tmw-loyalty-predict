@@ -11,3 +11,5 @@ kaggle.json
 mlartifacts
 mlruns
 __pycache__
+
+.vscode
