@@ -22,8 +22,10 @@ with tb_daily as (
     idcliente,
     substr(dtcriacao,0,11) as dt_dia
     from transacoes
+    where 1=1
+        and dtcriacao < '{date}' -- dtcriacao esta como timestamp
 )
-,max_date as (
+, max_date as (
     select julianday(max(dt_dia)) as max_day, date(dt_dia) as datacriacao_max
     from tb_daily
 )
@@ -77,11 +79,11 @@ with tb_daily as (
         on t1.idcliente = t2.idcliente
 )
 select
-desc_life_cycle,
-descLifeCycle_TEO,
-count(1) as qtd
-from tb_lifecycle
-group by 1
-order by 1
+t.datacriacao_max as data_ref
+,t.idcliente
+,t.qtd_dias_prim_transac
+,t.qtd_dias_ult_transac
+,t.qtd_dias_penult_transac
+,t.desc_life_cycle
+from tb_lifecycle t
 ;
-
