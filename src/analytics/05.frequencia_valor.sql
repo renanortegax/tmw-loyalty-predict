@@ -18,13 +18,13 @@ with tb_freq_valor as (
     ,qtd_frequencia
     ,qtd_pontos
     ,case
-        when qtd_frequencia <= 10 and qtd_pontos > 1500 then 'Hyper'
-        when qtd_frequencia > 10 and qtd_pontos >= 1500 then 'Eficiente'
-        when qtd_frequencia <= 10 and qtd_pontos > 750 then 'Indeciso'
-        when qtd_frequencia > 10 and qtd_pontos >= 7500 then 'Esforcado'
-        when qtd_frequencia < 5 then 'Lurker'
-        when qtd_frequencia <= 10 then 'Preguicoso'
-        when qtd_frequencia > 10 then 'Potencial'
+        when qtd_frequencia <= 10 and qtd_pontos > 1500 then '12-Hyper'
+        when qtd_frequencia > 10 and qtd_pontos >= 1500 then '22-Eficiente'
+        when qtd_frequencia <= 10 and qtd_pontos > 750 then '11-Indeciso'
+        when qtd_frequencia > 10 and qtd_pontos >= 750 then '21-Esforcado'
+        when qtd_frequencia < 5 then '00-Lurker'
+        when qtd_frequencia <= 10 then '01-Preguicoso'
+        when qtd_frequencia > 10 then '20-Potencial'
     end as cluster
     from tb_freq_valor
 )
