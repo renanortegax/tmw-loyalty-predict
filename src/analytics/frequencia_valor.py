@@ -68,7 +68,7 @@ sns.scatterplot(
     data = df_x,
     x='norm_freq',
     y='norm_valor',
-    hue='cluster',
+    hue='cluster_kmean',
     palette='deep'
 )
 plt.grid()
