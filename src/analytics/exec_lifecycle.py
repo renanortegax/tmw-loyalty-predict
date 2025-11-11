@@ -26,7 +26,7 @@ def generate_dates(date_start, date_end):
     return dates, [d.strftime("%Y-%m-%d") for d in dates]
 #%%
 query = import_query('./03.life_cycle.sql')
-print(query.format(date='2025-11-09'))
+# print(query.format(date='2025-11-09'))
 
 #%%
 engine_app = sqlalchemy.create_engine("sqlite:///../../data/loyalty-system/database.db")
@@ -40,14 +40,17 @@ df.head()
 #%%
 dates = generate_dates('2024-05-01', '2025-10-01')[-1]
 
-#%%
 # Foto da base todo final de mês
 for d in dates:
     query_format = query.format(date=d)
     
     with engine_analytical.connect() as con:
-        con.execute(sqlalchemy.text(f"delete from life_cycle where data_ref = date('{d}', '-1 day')"))
-        con.commit()
+        try:
+            query_delete = f"delete from life_cycle where data_ref = date('{d}', '-1 day')"
+            con.execute(sqlalchemy.text(query_delete))
+            con.commit()
+        except Exception as e:
+            print(e)
     
     print(d)
     df = pd.read_sql(query_format, engine_app)
@@ -59,4 +62,4 @@ for d in dates:
 # your_table = sqlalchemy.Table('life_cycle', metadata, autoload_with=engine_analytical)
 # your_table.drop(engine_analytical)
 # print("Table 'life_cycle' dropped successfully!")
-################################################
+###############################################
