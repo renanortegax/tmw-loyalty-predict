@@ -18,7 +18,7 @@
 */
 
 with tb_daily as (
-    select
+    select distinct
     idcliente,
     substr(dtcriacao,0,11) as dt_dia
     from transacoes
@@ -91,9 +91,9 @@ with tb_daily as (
     ,qtd_frequencia
     ,qtd_pontos
     ,case
-        when qtd_frequencia <= 10 and qtd_pontos > 1500 then '12-Hyper'
+        when qtd_frequencia <= 10 and qtd_pontos >= 1500 then '12-Hyper'
         when qtd_frequencia > 10 and qtd_pontos >= 1500 then '22-Eficiente'
-        when qtd_frequencia <= 10 and qtd_pontos > 750 then '11-Indeciso'
+        when qtd_frequencia <= 10 and qtd_pontos >= 750 then '11-Indeciso'
         when qtd_frequencia > 10 and qtd_pontos >= 750 then '21-Esforcado'
         when qtd_frequencia < 5 then '00-Lurker'
         when qtd_frequencia <= 10 then '01-Preguicoso'
