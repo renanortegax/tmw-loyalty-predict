@@ -3,6 +3,7 @@ import pandas as pd
 import sqlalchemy
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from tqdm import tqdm
 
 #%%
 def import_query(path):
@@ -10,7 +11,7 @@ def import_query(path):
         query = f.read()
         return query
 
-def generate_dates(date_start, date_end):
+def generate_dates_day_one(date_start, date_end):
     if isinstance(date_start, str):
         date_start = datetime.strptime(date_start, "%Y-%m-%d").date()
     if isinstance(date_end, str):
@@ -24,6 +25,25 @@ def generate_dates(date_start, date_end):
         current += relativedelta(months=1)
         
     return dates, [d.strftime("%Y-%m-%d") for d in dates]
+
+def generate_dates(date_start, date_end):
+    if isinstance(date_start, str):
+        date_start = datetime.strptime(date_start, "%Y-%m-%d").date()
+    if isinstance(date_end, str):
+        date_end = datetime.strptime(date_end, "%Y-%m-%d").date()
+    
+    dates = []
+    
+    while date_start <= date_end:
+        dates.append(date_start)
+        date_start += relativedelta(days=1)
+        
+    return dates, [d.strftime("%Y-%m-%d") for d in dates]
+
+
+# dates = generate_dates('2024-03-01', '2025-09-01')[-1]
+dates = generate_dates('2025-09-01', '2025-10-01')[-1]
+
 #%%
 query = import_query('./03.life_cycle.sql')
 # print(query.format(date='2025-11-09'))
@@ -34,14 +54,9 @@ engine_analytical = sqlalchemy.create_engine("sqlite:///../../data/analytics/dat
 #%%
 df = pd.read_sql(query.format(date='2025-11-09'), engine_app)
 df.head()
-# %%
-# df.to_sql("life_cycle", engine_analytical, index=False, if_exists='replace')
-
-#%%
-dates = generate_dates('2024-05-01', '2025-10-01')[-1]
 
 # Foto da base todo final de mês
-for d in dates:
+for d in tqdm(dates):
     query_format = query.format(date=d)
     
     with engine_analytical.connect() as con:
@@ -52,7 +67,7 @@ for d in dates:
         except Exception as e:
             print(e)
     
-    print(d)
+    # print(d)
     df = pd.read_sql(query_format, engine_app)
     df.to_sql("life_cycle", engine_analytical, index=False, if_exists='append')
 
