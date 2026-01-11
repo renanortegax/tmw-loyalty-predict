@@ -130,7 +130,7 @@ with tb_transacao as (
         ,1.* count(case when t3.DescNomeProduto = 'R Lover' then t1.IdTransacao end) / count(t1.IdTransacao) as qtd_RLover
         ,1.* count(case when t3.DescNomeProduto = 'Resgatar Ponei' then t1.IdTransacao end) / count(t1.IdTransacao) as qtd_ResgatarPonei
         ,1.* count(case when t3.DescNomeProduto = 'Lista de presença' then t1.IdTransacao end) / count(t1.IdTransacao) as qtd_Listadepresenca
-        ,1.* count(case when t3.DescNomeProduto = 'Presença Streak' then t1.IdTransacao end) / count(t1.IdTransacao) as qtd_PresençaStreak
+        ,1.* count(case when t3.DescNomeProduto = 'Presença Streak' then t1.IdTransacao end) / count(t1.IdTransacao) as qtd_PresencaStreak
         ,1.* count(case when t3.DescNomeProduto = 'Troca de Pontos StreamElements' then t1.IdTransacao end) / count(t1.IdTransacao) as qtd_TrocadePontosStreamElements
         ,1.* count(case when t3.DescNomeProduto = 'Reembolso: Troca de Pontos StreamElements' then t1.IdTransacao end) / count(t1.IdTransacao) as qtd_Reembolso_StreamElements
             -- Agrupando alguns produtos pra usar a categoria, por serem muitos
@@ -159,7 +159,7 @@ with tb_transacao as (
         ,t4.qtd_RLover
         ,t4.qtd_ResgatarPonei
         ,t4.qtd_Listadepresenca
-        ,t4.qtd_PresençaStreak
+        ,t4.qtd_PresencaStreak
         ,t4.qtd_TrocadePontosStreamElements
         ,t4.qtd_Reembolso_StreamElements
         ,t4.qtd_rpg
