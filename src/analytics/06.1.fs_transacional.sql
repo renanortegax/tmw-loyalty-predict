@@ -4,46 +4,46 @@ with tb_transacao as (
     ,substr(dtcriacao,0,11) as dtdia
     ,CAST(substr(dtcriacao, 12,2) as int) - 3 as dthora -- subtrai 3 por conta do UTC+0
     from transacoes
-    where dtcriacao <= '2025-10-01'
+    where dtcriacao <= '{date}'
 )
 , tb_agg_transacao as (
     select
         idcliente
 
         /* -- Idade na Base --------------------------------------------------- */
-        ,max( julianday('2025-10-01') - julianday(DtCriacao) ) as idade_dias
+        ,max( julianday('{date}') - julianday(DtCriacao) ) as idade_dias
         /* -- Frequência em Dias (D7, D14, D28, D56, Vida) --------------------------------------------------- */
         ,count(DISTINCT dtdia) as qtd_ativacao_vida
-        ,count(DISTINCT case when dtdia >= date('2025-10-01', '-7 days') then dtdia end) as qtd_ativacao_D7
-        ,count(DISTINCT case when dtdia >= date('2025-10-01', '-14 days') then dtdia end) as qtd_ativacao_D14
-        ,count(DISTINCT case when dtdia >= date('2025-10-01', '-28 days') then dtdia end) as qtd_ativacao_D28
-        ,count(DISTINCT case when dtdia >= date('2025-10-01', '-56 days') then dtdia end) as qtd_ativacao_D56
+        ,count(DISTINCT case when dtdia >= date('{date}', '-7 days') then dtdia end) as qtd_ativacao_D7
+        ,count(DISTINCT case when dtdia >= date('{date}', '-14 days') then dtdia end) as qtd_ativacao_D14
+        ,count(DISTINCT case when dtdia >= date('{date}', '-28 days') then dtdia end) as qtd_ativacao_D28
+        ,count(DISTINCT case when dtdia >= date('{date}', '-56 days') then dtdia end) as qtd_ativacao_D56
         /* -- Frequência em Transações (D7, D14, D28, D56, Vida) --------------------------------------------------- */
         ,count(DISTINCT idtransacao) as qtd_transacao_vida
-        ,count(DISTINCT case when dtdia >= date('2025-10-01', '-7 days') then idtransacao end) as qtd_transacao_D7
-        ,count(DISTINCT case when dtdia >= date('2025-10-01', '-14 days') then idtransacao end) as qtd_transacao_D14
-        ,count(DISTINCT case when dtdia >= date('2025-10-01', '-28 days') then idtransacao end) as qtd_transacao_D28
-        ,count(DISTINCT case when dtdia >= date('2025-10-01', '-56 days') then idtransacao end) as qtd_transacao_D56
+        ,count(DISTINCT case when dtdia >= date('{date}', '-7 days') then idtransacao end) as qtd_transacao_D7
+        ,count(DISTINCT case when dtdia >= date('{date}', '-14 days') then idtransacao end) as qtd_transacao_D14
+        ,count(DISTINCT case when dtdia >= date('{date}', '-28 days') then idtransacao end) as qtd_transacao_D28
+        ,count(DISTINCT case when dtdia >= date('{date}', '-56 days') then idtransacao end) as qtd_transacao_D56
 
         /* -- Valor de pontos (pos, neg, saldo) - D7, D14, D28, D56, Vida --------------------------------------------------- */
         ------ saldo liquido
         ,sum(qtdepontos) as saldo_vida
-        ,sum(case when dtdia >= date('2025-10-01', '-7 days') then qtdepontos else 0 end) as saldo_D7
-        ,sum(case when dtdia >= date('2025-10-01', '-14 days') then qtdepontos else 0 end) as saldo_D14
-        ,sum(case when dtdia >= date('2025-10-01', '-28 days') then qtdepontos else 0 end) as saldo_D28
-        ,sum(case when dtdia >= date('2025-10-01', '-56 days') then qtdepontos else 0 end) as saldo_D56
+        ,sum(case when dtdia >= date('{date}', '-7 days') then qtdepontos else 0 end) as saldo_D7
+        ,sum(case when dtdia >= date('{date}', '-14 days') then qtdepontos else 0 end) as saldo_D14
+        ,sum(case when dtdia >= date('{date}', '-28 days') then qtdepontos else 0 end) as saldo_D28
+        ,sum(case when dtdia >= date('{date}', '-56 days') then qtdepontos else 0 end) as saldo_D56
         ------ positivos
         ,sum(case when qtdepontos > 0 then qtdepontos else 0 end) as qtd_pontos_pos_vida
-        ,sum(case when dtdia >= date('2025-10-01', '-7 days') and qtdepontos > 0 then qtdepontos else 0 end) as qtd_pontos_pos_D7
-        ,sum(case when dtdia >= date('2025-10-01', '-14 days') and qtdepontos > 0 then qtdepontos else 0 end) as qtd_pontos_pos_D14
-        ,sum(case when dtdia >= date('2025-10-01', '-28 days') and qtdepontos > 0 then qtdepontos else 0 end) as qtd_pontos_pos_D28
-        ,sum(case when dtdia >= date('2025-10-01', '-56 days') and qtdepontos > 0 then qtdepontos else 0 end) as qtd_pontos_pos_D56
+        ,sum(case when dtdia >= date('{date}', '-7 days') and qtdepontos > 0 then qtdepontos else 0 end) as qtd_pontos_pos_D7
+        ,sum(case when dtdia >= date('{date}', '-14 days') and qtdepontos > 0 then qtdepontos else 0 end) as qtd_pontos_pos_D14
+        ,sum(case when dtdia >= date('{date}', '-28 days') and qtdepontos > 0 then qtdepontos else 0 end) as qtd_pontos_pos_D28
+        ,sum(case when dtdia >= date('{date}', '-56 days') and qtdepontos > 0 then qtdepontos else 0 end) as qtd_pontos_pos_D56
         ------ negativos
         ,sum(case when qtdepontos < 0 then qtdepontos else 0 end) as qtd_pontos_negativ_vida
-        ,sum(case when dtdia >= date('2025-10-01', '-7 days') and qtdepontos < 0 then qtdepontos else 0 end) as qtd_pontos_negativ_D7
-        ,sum(case when dtdia >= date('2025-10-01', '-14 days') and qtdepontos < 0 then qtdepontos else 0 end) as qtd_pontos_negativ_D14
-        ,sum(case when dtdia >= date('2025-10-01', '-28 days') and qtdepontos < 0 then qtdepontos else 0 end) as qtd_pontos_negativ_D28
-        ,sum(case when dtdia >= date('2025-10-01', '-56 days') and qtdepontos < 0 then qtdepontos else 0 end) as qtd_pontos_negativ_D56
+        ,sum(case when dtdia >= date('{date}', '-7 days') and qtdepontos < 0 then qtdepontos else 0 end) as qtd_pontos_negativ_D7
+        ,sum(case when dtdia >= date('{date}', '-14 days') and qtdepontos < 0 then qtdepontos else 0 end) as qtd_pontos_negativ_D14
+        ,sum(case when dtdia >= date('{date}', '-28 days') and qtdepontos < 0 then qtdepontos else 0 end) as qtd_pontos_negativ_D28
+        ,sum(case when dtdia >= date('{date}', '-56 days') and qtdepontos < 0 then qtdepontos else 0 end) as qtd_pontos_negativ_D56
 
         /* -- Período que assiste live (share de período) --------------------------------------------------- */
         ,count(case when dthora BETWEEN 7 and 11 then idtransacao end) as qtd_transacao_manha
@@ -85,10 +85,10 @@ with tb_transacao as (
         idcliente
             /* -- Horas assistidas (D7, D14, D28, D56) --------------------------------------------------- */
         ,sum(duracao) as qtd_horas_vida
-        ,sum(case when dtdia >= date('2025-10-01', '-7 days') then duracao else 0 end) as qtd_horas_D7
-        ,sum(case when dtdia >= date('2025-10-01', '-14 days') then duracao else 0 end) as qtd_horas_D14
-        ,sum(case when dtdia >= date('2025-10-01', '-28 days') then duracao else 0 end) as qtd_horas_D28
-        ,sum(case when dtdia >= date('2025-10-01', '-56 days') then duracao else 0 end) as qtd_horas_D56
+        ,sum(case when dtdia >= date('{date}', '-7 days') then duracao else 0 end) as qtd_horas_D7
+        ,sum(case when dtdia >= date('{date}', '-14 days') then duracao else 0 end) as qtd_horas_D14
+        ,sum(case when dtdia >= date('{date}', '-28 days') then duracao else 0 end) as qtd_horas_D28
+        ,sum(case when dtdia >= date('{date}', '-56 days') then duracao else 0 end) as qtd_horas_D56
     from tb_hora_dia
     group by 1
 )
@@ -104,7 +104,7 @@ with tb_transacao as (
     select
     idcliente,
     avg(julianday(dtDia) - julianday(lag_dia)) as avg_intervalo_dias_vida,
-    avg(case when dtdia >= date('2025-10-01', '-28 days') then julianday(dtDia) - julianday(lag_dia) end) as avg_intervalo_dias_D28
+    avg(case when dtdia >= date('{date}', '-28 days') then julianday(dtDia) - julianday(lag_dia) end) as avg_intervalo_dias_D28
     from tb_lag_dia
     group by 1
 )
@@ -173,7 +173,7 @@ with tb_transacao as (
         on t1.idCliente = t4.idCliente
 )
 SELECT
-date('2025-10-01', '-1 day') as data_ref
+date('{date}', '-1 day') as data_ref
 ,*
 from tb_join
 ;

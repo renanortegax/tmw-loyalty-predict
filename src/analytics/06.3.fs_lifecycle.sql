@@ -5,7 +5,7 @@ with tb_lifecycle_atual as (
     ,qtd_frequencia
     from life_cycle
     where 1=1
-        and data_ref = date('2025-10-01', '-1 day')
+        and data_ref = date('{date}', '-1 day')
 )
 , tb_lifecycle_D28 as (
     select
@@ -13,7 +13,7 @@ with tb_lifecycle_atual as (
     ,desc_life_cycle as desc_life_cycle_D28
     from life_cycle
     where 1=1
-        and data_ref = date('2025-10-01','-29 day')
+        and data_ref = date('{date}','-29 day')
 )
 , tb_share_ciclos as (
     select
@@ -27,7 +27,7 @@ with tb_lifecycle_atual as (
         ,1.* sum(case when desc_life_cycle = '05.Zumbi' then 1 else 0 end) / count(*) as pct_Zumbi
     from life_cycle
     where 1=1
-        and data_ref < '2025-10-01'
+        and data_ref < '{date}'
     group by 1
 )
 , tb_avg_ciclo as (
@@ -59,7 +59,8 @@ with tb_lifecycle_atual as (
         on t1.desc_life_cycle_atual = t4.desc_life_cycle_atual
 )
 select
+date('{date}', '-1 day') as data_ref,
 *
 from tb_join
 where 1=1
-    and date('2025-10-01', '-1 day')
+    and date('{date}', '-1 day')
