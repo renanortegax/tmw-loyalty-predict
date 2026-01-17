@@ -5,6 +5,12 @@ from sklearn import model_selection
 from feature_engine import selection
 from feature_engine import imputation
 from feature_engine import encoding
+import matplotlib.pyplot as plt
+
+import mlflow
+
+mlflow.set_tracking_uri('http://localhost:5000')
+mlflow.set_experiment(experiment_id=1)
 
 pd.set_option('display.max_columns', None)
 
@@ -98,65 +104,90 @@ from sklearn import metrics
 
 model = ensemble.AdaBoostClassifier(random_state=42,
                                     n_estimators=150,
-                                    learning_rate=0.1)
+                                    learning_rate=0.1
+                                )
 
 # model = ensemble.RandomForestClassifier(random_state=42,
 #                                         n_estimators=150,
 #                                         n_jobs=-1,
-#                                         min_samples_leaf=60)
+#                                         min_samples_leaf=50)
 
 # model = tree.DecisionTreeClassifier(random_state=42, min_samples_leaf=50)
 
 #%%
-# >> CRIANDO PIPELINE
+# >> CRIANDO PIPELINE E EXECUTANDO NO MLFOL
 from sklearn import pipeline
-model_pipeline = pipeline.Pipeline(steps=[
-    ('Remocao de Features',drop_features),
-    ('Imputacao de Zeros',imput_0),
-    ('Imputacao de NaoUsuario',imput_new),
-    ('Imputacao de 1000',imput_1000),
-    ('Onehot Encoding',onehot),
-    ('Algoritmo', model)
-])
+with mlflow.start_run() as run:
+    mlflow.sklearn.autolog()
+    
+    model_pipeline = pipeline.Pipeline(steps=[
+        ('Remocao de Features',drop_features),
+        ('Imputacao de Zeros',imput_0),
+        ('Imputacao de NaoUsuario',imput_new),
+        ('Imputacao de 1000',imput_1000),
+        ('Onehot Encoding',onehot),
+        ('Algoritmo', model)
+    ])
 
-model_pipeline.fit(X_train, y_train)
+    model_pipeline.fit(X_train, y_train)
 
-#%%
-model.fit(X_train, y_train)
+    # >> ACESS - METRICAS
+    # -------- TREINO
+    y_pred_train = model_pipeline.predict(X_train)
+    y_proba_train = model_pipeline.predict_proba(X_train)
 
-#%%
-# >> ACESS - METRICAS
-# -------- TREINO
-y_pred_train = model_pipeline.predict(X_train)
-y_proba_train = model_pipeline.predict_proba(X_train)
+    acc_train = metrics.accuracy_score(y_train, y_pred_train)
+    auc_train = metrics.roc_auc_score(y_train, y_proba_train[:,1])
 
-acc_train = metrics.accuracy_score(y_train, y_pred_train)
-auc_train = metrics.roc_auc_score(y_train, y_proba_train[:,1])
+    print("Acuracia Treino: ", acc_train)
+    print("AUC Treino: ", auc_train)
 
-print("Acuracia Treino: ", acc_train)
-print("AUC Treino: ", auc_train)
+    ##%%
+    # -------- TESTE
+    y_pred_test = model_pipeline.predict(X_test)
+    y_proba_test = model_pipeline.predict_proba(X_test)
 
-#%%
-# -------- TESTE
-y_pred_test = model_pipeline.predict(X_test)
-y_proba_test = model_pipeline.predict_proba(X_test)
+    acc_test = metrics.accuracy_score(y_test, y_pred_test)
+    auc_test = metrics.roc_auc_score(y_test, y_proba_test[:,1])
 
-acc_test = metrics.accuracy_score(y_test, y_pred_test)
-auc_test = metrics.roc_auc_score(y_test, y_proba_test[:,1])
+    print("Acuracia Teste: ", acc_test)
+    print("AUC Teste: ", auc_test)
+    ##%%
+    # ---------------- METRICAS: acuracia e area da curva ----------------
+    # -- Fazendo na mao um chute que todo mundo é 0, minha acuracia fica maior, pq a incidência de 0 é muito grande
+    #    -- 0 é virar Fiel no próximo MAU do lifecycle (+28 day)
+    y_predict_burns = pd.Series([0]*y_test.shape[0])
+    y_proba_burns = pd.Series([y_train.mean()]*y_test.shape[0])
 
-print("Acuracia Teste: ", acc_test)
-print("AUC Teste: ", auc_test)
-#%%
-# ---------------- METRICAS: acuracia e area da curva ----------------
-# -- Fazendo na mao um chute que todo mundo é 0, minha acuracia fica maior, pq a incidência de 0 é muito grande
-#    -- 0 é virar Fiel no próximo MAU do lifecycle (+28 day)
-y_predict_burns = pd.Series([0]*y_test.shape[0])
-y_proba_burns = pd.Series([y_train.mean()]*y_test.shape[0])
+    acc_burns = metrics.accuracy_score(y_test, y_predict_burns)
+    auc_burns = metrics.roc_auc_score(y_test, y_proba_burns)
+    print("Acuracia Burns: ", acc_burns)
+    print("AUC Burns: ", auc_burns)
+    
+    mlflow.log_metrics({
+        "acc_train":acc_train,
+        "auc_train":auc_train,
+        "acc_test":acc_test,
+        "auc_test":auc_test,
+        "acc_burns":acc_burns,
+        "auc_burns":auc_burns
+    })
+    
+    ##%%
+    # -------- PLOTANDO
+    roc_train = metrics.roc_curve(y_train, y_proba_train[:,1])
+    roc_test = metrics.roc_curve(y_test, y_proba_test[:,1])
 
-acc_burns = metrics.accuracy_score(y_test, y_predict_burns)
-auc_burns = metrics.roc_auc_score(y_test, y_proba_burns)
-print("Acuracia Burns: ", acc_burns)
-print("AUC Burns: ", auc_burns)
+    plt.figure(dpi=120)
+
+    plt.plot(roc_test[0],roc_test[1])
+    plt.plot(roc_train[0],roc_train[1])
+    plt.legend([f'teste: {auc_test:.4f}',f'treino: {auc_train:.4f}'])
+    plt.grid(True)
+    plt.title('Curva ROC')
+    plt.savefig('curva_roc.png')
+    
+    mlflow.log_artifact('curva_roc.png')
 
 # %%
 # ---------------- OLHANDO AS VARIAVEIS ----------------
