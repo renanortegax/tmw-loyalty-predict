@@ -68,23 +68,15 @@ bivariada_cat
 #%%
 bivariada_cat_d28 = df_train.groupby([cat_features[1]])[target].mean()
 bivariada_cat_d28
-
-len(num_features)
 # %%
 # >> MODIFY - DROP
 X_train[num_features] = X_train[num_features].astype(float)
-
 # casos que a mediana do grupo que virou fiel e do que não virou é a mesma -> não ajuda no modelo
-
 to_remove = bivariada_num[bivariada_num['ratio']==1].index.tolist()
+
 drop_features = selection.DropFeatures(to_remove)
 
-X_train_transform = drop_features.fit_transform(X_train)
-#%%
-# >> MODIFY - FILL 0
-s_nas = X_train_transform.isna().mean()
-s_nas[s_nas>0]
-
+# >> MODIFY - MISSING
 fill_0 = ['python2025']
 imput_0 = imputation.ArbitraryNumberImputer(arbitrary_number=0,
                                             variables=fill_0)
@@ -95,21 +87,8 @@ imput_new = imputation.CategoricalImputer(fill_value='Nao-Usuario',
 imput_1000 = imputation.ArbitraryNumberImputer(arbitrary_number=1000,
                                                variables=['avg_intervalo_dias_D28','avg_intervalo_dias_vida','qtd_dias_ult_atividade'])
 
-X_train_transform = imput_0.fit_transform(X_train_transform)
-X_train_transform = imput_new.fit_transform(X_train_transform)
-X_train_transform = imput_1000.fit_transform(X_train_transform)
-
-#%%
-# --> validando que nao ficou casos vazios
-s_nas = X_train_transform.isna().mean()
-s_nas[s_nas>0]
-
-#%%
 # >> MODIFY - OneHot
 onehot = encoding.OneHotEncoder(variables=cat_features)
-X_train_transform = onehot.fit_transform(X_train_transform)
-
-X_train_transform.head()
 
 #%%
 # >> MODDEL
@@ -127,13 +106,29 @@ model = ensemble.AdaBoostClassifier(random_state=42,
 #                                         min_samples_leaf=60)
 
 # model = tree.DecisionTreeClassifier(random_state=42, min_samples_leaf=50)
-model.fit(X_train_transform, y_train)
 
 #%%
-# >> ACESS
+# >> CRIANDO PIPELINE
+from sklearn import pipeline
+model_pipeline = pipeline.Pipeline(steps=[
+    ('Remocao de Features',drop_features),
+    ('Imputacao de Zeros',imput_0),
+    ('Imputacao de NaoUsuario',imput_new),
+    ('Imputacao de 1000',imput_1000),
+    ('Onehot Encoding',onehot),
+    ('Algoritmo', model)
+])
+
+model_pipeline.fit(X_train, y_train)
+
+#%%
+model.fit(X_train, y_train)
+
+#%%
+# >> ACESS - METRICAS
 # -------- TREINO
-y_pred_train = model.predict(X_train_transform)
-y_proba_train = model.predict_proba(X_train_transform)
+y_pred_train = model_pipeline.predict(X_train)
+y_proba_train = model_pipeline.predict_proba(X_train)
 
 acc_train = metrics.accuracy_score(y_train, y_pred_train)
 auc_train = metrics.roc_auc_score(y_train, y_proba_train[:,1])
@@ -143,22 +138,14 @@ print("AUC Treino: ", auc_train)
 
 #%%
 # -------- TESTE
-# Somente .transform, e nao .fit_transform
-#   -- pra só aplicar agora
-X_test_transform = drop_features.transform(X_test)
-X_test_transform = imput_0.transform(X_test_transform)
-X_test_transform = imput_new.transform(X_test_transform)
-X_test_transform = imput_1000.transform(X_test_transform)
-X_test_transform = onehot.transform(X_test_transform)
+y_pred_test = model_pipeline.predict(X_test)
+y_proba_test = model_pipeline.predict_proba(X_test)
 
-y_pred_test = model.predict(X_test_transform)
-y_proba_test = model.predict_proba(X_test_transform)
+acc_test = metrics.accuracy_score(y_test, y_pred_test)
+auc_test = metrics.roc_auc_score(y_test, y_proba_test[:,1])
 
-acc_teste = metrics.accuracy_score(y_test, y_pred_test)
-auc_teste = metrics.roc_auc_score(y_test, y_proba_test[:,1])
-
-print("Acuracia Teste: ", acc_teste)
-print("AUC Teste: ", auc_teste)
+print("Acuracia Teste: ", acc_test)
+print("AUC Teste: ", auc_test)
 #%%
 # ---------------- METRICAS: acuracia e area da curva ----------------
 # -- Fazendo na mao um chute que todo mundo é 0, minha acuracia fica maior, pq a incidência de 0 é muito grande
@@ -175,12 +162,12 @@ print("AUC Burns: ", auc_burns)
 # ---------------- OLHANDO AS VARIAVEIS ----------------
 pd.options.display.float_format = '{:.6f}'.format
 
-features_names = X_train_transform.columns.tolist()
-features_importance = pd.DataFrame(X_train_transform.columns.tolist(), columns=['variavel'])
-features_importance['importance'] = model.feature_importances_
-features_importance.sort_values(by='importance', ascending=False)
+#%%        -- pegando ate penultimo passo --
+features_names = model_pipeline[:-1].transform(X_train.head(1)).columns.tolist()
+features_importance = pd.DataFrame(model_pipeline[:-1].transform(X_train.head(1)).columns.tolist(), columns=['variavel'])
+features_importance['importance'] = model_pipeline[-1].feature_importances_
+features_importance.sort_values(by='importance', ascending=False).head(20)
 # features_importance.sort_values(ascending=False)
-features_importance.head(10)
 
 #%%
 # ------------- OLHANDO O OOT -------------
@@ -193,19 +180,24 @@ y_oot = df_oot[target]
 
 y_oot.value_counts()
 
-#%%
-X_oot_transform = drop_features.transform(X_oot)
-X_oot_transform = imput_0.transform(X_oot_transform)
-X_oot_transform = imput_new.transform(X_oot_transform)
-X_oot_transform = imput_1000.transform(X_oot_transform)
-X_oot_transform = onehot.transform(X_oot_transform)
-
-y_pred_oot = model.predict(X_oot_transform)
-y_proba_oot = model.predict_proba(X_oot_transform)
+y_pred_oot = model_pipeline.predict(X_oot)
+y_proba_oot = model_pipeline.predict_proba(X_oot)
 
 acc_oot = metrics.accuracy_score(y_oot, y_pred_oot)
 auc_oot = metrics.roc_auc_score(y_oot, y_proba_oot[:,1])
-#%%
+
 print("Acuracia OOT: ", acc_oot)
 print("AUC OOT: ", auc_oot)
 # %%
+
+# >> ACESS - PERSISTIR MODELO
+model_series = pd.Series(
+    {
+        "model":model_pipeline,
+        "features":X_train.columns.tolist(),
+        "auc_train":auc_train,
+        "auc_test":auc_test,
+        "auc_oot":auc_oot,
+    }
+)
+model_series.to_pickle("model_fiel.pkl")
