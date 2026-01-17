@@ -2,13 +2,13 @@
 import sqlalchemy
 import pandas as pd
 from sklearn import model_selection
+from sklearn import pipeline
 from feature_engine import selection
 from feature_engine import imputation
 from feature_engine import encoding
 import matplotlib.pyplot as plt
-
+#%%
 import mlflow
-
 mlflow.set_tracking_uri('http://localhost:5000')
 mlflow.set_experiment(experiment_id=1)
 
@@ -25,6 +25,7 @@ df_oot = df[df['data_ref']==df['data_ref'].max()].reset_index(drop=True)
 df_oot.head(3)
 
 #%%
+# >> SAMPLE - separando teste e treino
 target = 'flagFiel'
 features = df.columns.tolist()[4:]
 
@@ -34,8 +35,7 @@ X = df_train_test[features] # pd.Series => vetor
 y = df_train_test[target]   # df => matriz
 
 #%%
-
-
+# >> GERANDO AS BASES DE TREINO E TESTE
 X_train, X_test, y_train, y_test = model_selection.train_test_split(
     X, y,
     random_state=42,
@@ -43,12 +43,10 @@ X_train, X_test, y_train, y_test = model_selection.train_test_split(
     # pra taxa % do Y que é o target ficar parecida entre treino e teste -> bases mais homogêneas entre si
     stratify=y
 )
-
-print(f"Treino: {y_train.shape[0]}, Tx.Target {100*y_train.mean():.2f}%")
-print(f"Teste: {y_test.shape[0]}, Tx.Target {100*y_test.mean():.2f}%")
+print(f"Base treino: {y_train.shape[0]}, Tx.Target {100*y_train.mean():.2f}%")
+print(f"Base teste: {y_test.shape[0]}, Tx.Target {100*y_test.mean():.2f}%")
 
 #%%
-
 # >> EXPLORE - MISSING
 s_nas = X_train.isna().mean()
 s_nas = s_nas[s_nas>0]
@@ -69,11 +67,14 @@ bivariada_num['ratio'] = (bivariada_num[1] + 0.001) / (bivariada_num[0] + 0.001)
 bivariada_num.sort_values(by='ratio', ascending=False)
 
 #%%
+# desc_life_cycle_atual
 bivariada_cat = df_train.groupby([cat_features[0]])[target].mean()
 bivariada_cat
 #%%
+# desc_life_cycle_D28
 bivariada_cat_d28 = df_train.groupby([cat_features[1]])[target].mean()
 bivariada_cat_d28
+
 # %%
 # >> MODIFY - DROP
 X_train[num_features] = X_train[num_features].astype(float)
@@ -102,21 +103,21 @@ from sklearn import tree
 from sklearn import ensemble
 from sklearn import metrics
 
-model = ensemble.AdaBoostClassifier(random_state=42,
-                                    n_estimators=150,
-                                    learning_rate=0.1
-                                )
+# model = ensemble.AdaBoostClassifier(random_state=42,
+#                                     n_estimators=150,
+#                                     learning_rate=0.1
+#                                 )
 
 # model = ensemble.RandomForestClassifier(random_state=42,
 #                                         n_estimators=150,
 #                                         n_jobs=-1,
 #                                         min_samples_leaf=50)
 
-# model = tree.DecisionTreeClassifier(random_state=42, min_samples_leaf=50)
+model = tree.DecisionTreeClassifier(random_state=42, min_samples_leaf=50)
 
 #%%
-# >> CRIANDO PIPELINE E EXECUTANDO NO MLFOL
-from sklearn import pipeline
+# >> CRIANDO PIPELINE E EXECUTANDO NO MLFLOW
+
 with mlflow.start_run() as run:
     mlflow.sklearn.autolog()
     
@@ -142,7 +143,6 @@ with mlflow.start_run() as run:
     print("Acuracia Treino: ", acc_train)
     print("AUC Treino: ", auc_train)
 
-    ##%%
     # -------- TESTE
     y_pred_test = model_pipeline.predict(X_test)
     y_proba_test = model_pipeline.predict_proba(X_test)
@@ -152,7 +152,7 @@ with mlflow.start_run() as run:
 
     print("Acuracia Teste: ", acc_test)
     print("AUC Teste: ", auc_test)
-    ##%%
+
     # ---------------- METRICAS: acuracia e area da curva ----------------
     # -- Fazendo na mao um chute que todo mundo é 0, minha acuracia fica maior, pq a incidência de 0 é muito grande
     #    -- 0 é virar Fiel no próximo MAU do lifecycle (+28 day)
@@ -164,25 +164,47 @@ with mlflow.start_run() as run:
     print("Acuracia Burns: ", acc_burns)
     print("AUC Burns: ", auc_burns)
     
+    # -------- TESTE
+    # ------------- OLHANDO O OOT -------------
+    ## ->> Meu OOT ta 100% com 0, aí esta voltando nan pra AUC do Out of time
+        # --> pq to sem os dados do próximo mes que pegariam o 1 pra variavel target
+    # df_oot[num_features] = df_oot[num_features].astype(float)
+
+    X_oot = df_oot[features]
+    y_oot = df_oot[target]
+
+    print("Distribuicao da target do meu oot: \n", y_oot.value_counts())
+
+    y_pred_oot = model_pipeline.predict(X_oot)
+    y_proba_oot = model_pipeline.predict_proba(X_oot)
+
+    acc_oot = metrics.accuracy_score(y_oot, y_pred_oot)
+    auc_oot = metrics.roc_auc_score(y_oot, y_proba_oot[:,1])
+
+    print("Acuracia OOT: ", acc_oot)
+    print("AUC OOT: ", auc_oot)
+    
     mlflow.log_metrics({
         "acc_train":acc_train,
         "auc_train":auc_train,
         "acc_test":acc_test,
         "auc_test":auc_test,
         "acc_burns":acc_burns,
-        "auc_burns":auc_burns
+        "auc_burns":auc_burns,
+        "acc_oot":acc_oot,
+        "auc_oot":auc_oot
     })
     
     ##%%
     # -------- PLOTANDO
     roc_train = metrics.roc_curve(y_train, y_proba_train[:,1])
     roc_test = metrics.roc_curve(y_test, y_proba_test[:,1])
-
-    plt.figure(dpi=120)
+    roc_oot = metrics.roc_curve(y_oot, y_proba_oot[:,1])
 
     plt.plot(roc_test[0],roc_test[1])
     plt.plot(roc_train[0],roc_train[1])
-    plt.legend([f'teste: {auc_test:.4f}',f'treino: {auc_train:.4f}'])
+    plt.plot(roc_oot[0],roc_oot[1])
+    plt.legend([f'teste: {auc_test:.4f}',f'treino: {auc_train:.4f}',f'oot: {auc_oot:.4f}'])
     plt.grid(True)
     plt.title('Curva ROC')
     plt.savefig('curva_roc.png')
@@ -201,24 +223,7 @@ features_importance.sort_values(by='importance', ascending=False).head(20)
 # features_importance.sort_values(ascending=False)
 
 #%%
-# ------------- OLHANDO O OOT -------------
-## ->> Meu OOT ta 100% com 0, aí esta voltando nan pra AUC do Out of time
-    # --> pq to sem os dados do próximo mes que pegariam o 1 pra variavel target
-df_oot[num_features] = df_oot[num_features].astype(float)
 
-X_oot = df_oot[features]
-y_oot = df_oot[target]
-
-y_oot.value_counts()
-
-y_pred_oot = model_pipeline.predict(X_oot)
-y_proba_oot = model_pipeline.predict_proba(X_oot)
-
-acc_oot = metrics.accuracy_score(y_oot, y_pred_oot)
-auc_oot = metrics.roc_auc_score(y_oot, y_proba_oot[:,1])
-
-print("Acuracia OOT: ", acc_oot)
-print("AUC OOT: ", auc_oot)
 # %%
 
 # >> ACESS - PERSISTIR MODELO
