@@ -79,7 +79,7 @@ def exec_query(table, db_origin, db_target, dt_start, dt_stop, monthly):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--db_origin', choices=['loyalty-system', 'education-plataform','analytics'], default='loyalty-system')
+    parser.add_argument('--db_origin', choices=['loyalty-system', 'education-platform','analytics'], default='loyalty-system')
     parser.add_argument('--db_target', choices=['analytics'], default='analytics')
     parser.add_argument('--table', type=str, help='Tabela que vai processar com o mesmo nome do arquivo')
     parser.add_argument('--start', type=str, default='2024-03-01')
