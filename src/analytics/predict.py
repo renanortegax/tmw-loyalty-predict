@@ -2,6 +2,7 @@
 import pandas as pd
 import sqlalchemy
 import mlflow
+print("Rodar `mlflow server` para iniciar o mlflow")
 
 con = sqlalchemy.create_engine("sqlite:///../../data/analytics/database.db")
 

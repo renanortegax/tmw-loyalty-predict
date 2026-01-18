@@ -7,6 +7,7 @@ from feature_engine import selection
 from feature_engine import imputation
 from feature_engine import encoding
 import matplotlib.pyplot as plt
+print("Rodar `mlflow server` para iniciar o mlflow")
 #%%
 import mlflow
 mlflow.set_tracking_uri('http://localhost:5000')
@@ -104,34 +105,50 @@ from sklearn import ensemble
 from sklearn import metrics
 
 # model = ensemble.AdaBoostClassifier(random_state=42,
-#                                     n_estimators=150,
-#                                     learning_rate=0.1
+#                                     # n_estimators=150,
+#                                     # learning_rate=0.1
 #                                 )
 
-# model = ensemble.RandomForestClassifier(random_state=42,
-#                                         n_estimators=150,
-#                                         n_jobs=-1,
-#                                         min_samples_leaf=50)
+model = ensemble.RandomForestClassifier(random_state=42,
+#                                         # n_estimators=400,
+#                                         # n_jobs=2,
+#                                         # min_samples_leaf=50
+                                        )
 
-model = tree.DecisionTreeClassifier(random_state=42, min_samples_leaf=50)
+# model = tree.DecisionTreeClassifier(random_state=42, min_samples_leaf=50)
 
 #%%
 # >> CRIANDO PIPELINE E EXECUTANDO NO MLFLOW
 
+params = {
+    "n_estimators":[100,200,400,500,1000],
+    # "learning_rate":[0.001, 0.01, 0.05, 0.1, 0.2, 0.5, 0.9, 0.99],
+    "min_samples_leaf":[10,20,30,50,75,100]
+}
+
+grid = model_selection.GridSearchCV(model,
+                                    param_grid=params,
+                                    cv=3, #cv: qtd de bases pra fazer o cross_validation
+                                    scoring='roc_auc',
+                                    refit=True,
+                                    verbose=3, #nivel de logg
+                                    n_jobs=5
+                                    )
+
 with mlflow.start_run() as run:
     mlflow.sklearn.autolog()
-    
+
     model_pipeline = pipeline.Pipeline(steps=[
         ('Remocao de Features',drop_features),
         ('Imputacao de Zeros',imput_0),
         ('Imputacao de NaoUsuario',imput_new),
         ('Imputacao de 1000',imput_1000),
         ('Onehot Encoding',onehot),
-        ('Algoritmo', model)
+        ('Algoritmo', grid)
     ])
 
     model_pipeline.fit(X_train, y_train)
-
+    
     # >> ACESS - METRICAS
     # -------- TREINO
     y_pred_train = model_pipeline.predict(X_train)
@@ -236,4 +253,4 @@ model_series = pd.Series(
         "auc_oot":auc_oot,
     }
 )
-model_series.to_pickle("model_fiel.pkl")
+# model_series.to_pickle("model_fiel.pkl")
