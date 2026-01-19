@@ -22,6 +22,7 @@ steps = [
         "dt_start":last_dt_lifecycle,
         "dt_stop":now,
         "monthly":False,
+        "mode":"append"
     },
     {
         "table":"fs_transacional",
@@ -30,6 +31,7 @@ steps = [
         "dt_start":now,
         "dt_stop":now,
         "monthly":False,
+        "mode":"append"
     },
     {
         "table":"fs_education",
@@ -38,6 +40,7 @@ steps = [
         "dt_start":now,
         "dt_stop":now,
         "monthly":False,
+        "mode":"append"
     },
     {
         "table":"fs_lifecycle",
@@ -46,6 +49,7 @@ steps = [
         "dt_start":now,
         "dt_stop":now,
         "monthly":False,
+        "mode":"append"
     },
     {
         "table":"fs_all",
@@ -54,6 +58,7 @@ steps = [
         "dt_start":now,
         "dt_stop":now,
         "monthly":False,
+        "mode":"replace"
     },
 ]
 

@@ -50,7 +50,7 @@ def generate_dates(date_start, date_end, monthly=False):
 dicts_files = {f.split(".")[-2] : ".".join(f.split(".")[:-2]) for f in os.listdir("./") if f.endswith(".sql")}
 
 #%%
-def exec_query(table, db_origin, db_target, dt_start, dt_stop, monthly):
+def exec_query(table, db_origin, db_target, dt_start, dt_stop, monthly, mode='append'):
     engine_app = sqlalchemy.create_engine(f"sqlite:///../../data/{db_origin}/database.db")
     engine_analytical = sqlalchemy.create_engine(f"sqlite:///../../data/{db_target}/database.db")
 
@@ -73,7 +73,7 @@ def exec_query(table, db_origin, db_target, dt_start, dt_stop, monthly):
         
         # print(d)
         df = pd.read_sql(query_format, engine_app)
-        df.to_sql(table, engine_analytical, index=False, if_exists='append')
+        df.to_sql(table, engine_analytical, index=False, if_exists=mode)
 
 # dates = generate_dates('2024-03-01', '2025-09-01')[-1]
 
@@ -84,6 +84,7 @@ def main():
     parser.add_argument('--table', type=str, help='Tabela que vai processar com o mesmo nome do arquivo')
     parser.add_argument('--start', type=str, default='2024-03-01')
     parser.add_argument('--monthly', action='store_true')
+    parser.add_argument('--mode', choices=['append','replace'])
     
     stop = datetime.now().strftime('%Y-%m-%d')
     parser.add_argument('--stop', type=str, default=stop)
