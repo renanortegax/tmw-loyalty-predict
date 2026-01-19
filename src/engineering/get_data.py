@@ -1,10 +1,11 @@
 #%%
 import os
 from dotenv import load_dotenv
+load_dotenv()
+
 from kaggle import api
 import shutil
 
-load_dotenv()
 
 # os.getenv("KAGGLE_KEY")
 # os.getenv("KAGGLE_USERNAME")
