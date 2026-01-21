@@ -23,4 +23,4 @@ predict:
 	bash -c "source .venv/Scripts/activate && cd src/analytics && python predict_fiel.py"
 
 pipeline: get-data analytics predict
-	@echo "Pipeline concluída e predict realizado com sucesso. Salvo na tabela fs_all no banco analitico"
+	@echo "Pipeline concluída e predict realizado com sucesso. Salvo na as features de hoje na fs_all e o predict em predict_score_fiel no banco analitico"
