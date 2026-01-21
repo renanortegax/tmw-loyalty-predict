@@ -40,3 +40,14 @@ Identificar perda ou ganho de engajamento dos usuários da nossa comunidade.
 - 🎮 Sub na Twitch: [twitch.tv/teomewhy](https://twitch.tv/teomewhy)
 - 💌 Newsletter: [teomewhy.substack.com](https://teomewhy.substack.com)
 - 📚 Lojinha na Amazon: [Clique Aqui](https://www.amazon.com.br/shop/teo.calvo?-ref_=cm_sw_r_cp_ud_aipsfshop_MS3WV3HX76NT92FNB5BC)
+
+## Para rodar [local]:
+- Startar o mlflow: `mlflow server`
+- Rodando o get_data + pipeline + predict
+    - executar via **bash**: `make pipeline` 
+        - **Obs:** se for a primeira execucao, fazer o setup primeiro: `make setup`
+    - salva os predicts da data em questao na tabela do banco analitico `predict_score_fiel` via `src\analytics\predict_fiel.py`
+    - salva a feature store `fs_all` via `src\analytics\pipeline_analytics.py`. Sempre a feature_sorte mais recente (conforme script `src\analytics\07.fs_all.sql`)
+- Rodar o app flask pra subir a API e chamar por um outro cliente (Ex.: codigo `src\api\test_batendo_api.py` chama a api que faz predicao em tempo real)
+    - `flask --app src/api/api_fiel.py run --port 5001`
+        - porta 5000 o mlflow ta usando
